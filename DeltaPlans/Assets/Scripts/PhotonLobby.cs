@@ -37,7 +37,7 @@ public class PhotonLobby : MonoBehaviourPunCallbacks
     {
         string joinCode = GenerateRoomCode();
         int playerCap = System.Convert.ToInt32(_playerCap.text);
-        RoomOptions roomOptions = new RoomOptions { IsOpen = true, IsVisible = true, MaxPlayers = System.Convert.ToByte(playerCap)};
+        RoomOptions roomOptions = new RoomOptions { IsOpen = true, IsVisible = false, MaxPlayers = System.Convert.ToByte(playerCap)};
         PhotonNetwork.CreateRoom(joinCode, roomOptions);
     }
 
