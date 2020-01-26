@@ -8,13 +8,17 @@ using TMPro;
 
 public class PhotonLobby : MonoBehaviourPunCallbacks
 {
+
+    /// <summary>
+    /// This script handles All networking logic up until the player joins a room (then it is passed on to PhotonRoom.cs)
+    /// </summary>
+
     //Static Public
     public static PhotonLobby lobby; //Singleton Reference to the current lobby
 
     public Button _playButton;  //Play button (made interactable when client connects to master server)
     public TMP_InputField _joinCodeInputField;
     public TextMeshProUGUI _joinCodeWaitingRoomDisplay; //Displays the Join code for the current room in the waiting room
-    public MainMenuClient _uiManager;
     public TMP_InputField _playerCap;
     private void Awake()
     {
@@ -30,12 +34,13 @@ public class PhotonLobby : MonoBehaviourPunCallbacks
     public override void OnConnectedToMaster()
     {
         Debug.Log("Player client successfully connected to master server.");
+        PhotonNetwork.AutomaticallySyncScene = true;    //Automatically sync the scene with the master client
         _playButton.interactable = true;
     }
 
     public void CreateGame() //Called when a user attempts to create a new game
     {
-        string joinCode = GenerateRoomCode();
+        string joinCode = GenerateRoomCode();   
         int playerCap = System.Convert.ToInt32(_playerCap.text);
         RoomOptions roomOptions = new RoomOptions { IsOpen = true, IsVisible = false, MaxPlayers = System.Convert.ToByte(playerCap)};
         PhotonNetwork.CreateRoom(joinCode, roomOptions);
@@ -57,8 +62,8 @@ public class PhotonLobby : MonoBehaviourPunCallbacks
     {
         base.OnJoinedRoom();
         Debug.Log("Successfully Joined Room: " + PhotonNetwork.CurrentRoom.Name);
-        Debug.Log("Progressing to Waiting Room");
-        _uiManager.ChangeMenuPage(5);
+        Debug.Log("Progressing to Team Selection Page");
+        MainMenuClient._menuController.ChangeMenuPage(5);
         _joinCodeWaitingRoomDisplay.SetText("Join Code: " + PhotonNetwork.CurrentRoom.Name);
     }
 
@@ -70,10 +75,10 @@ public class PhotonLobby : MonoBehaviourPunCallbacks
 
     public static string GenerateRoomCode() //Generate a random 4 character code comprised of capital letters
     {
-        string validCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        string validCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         string tempCode = "";
 
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < 4; i++)
         {
             int characterID = Random.Range(0, validCharacters.Length);  //Pick a character in the string of valid characters
             tempCode = tempCode + validCharacters[characterID];         //Add it to the code

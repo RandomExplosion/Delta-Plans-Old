@@ -34,5 +34,12 @@ MonoBehaviour:
   - DestroySpaceship
   - Fire
   - RespawnSpaceship
+  - OnSceneFinishedLoading
+  - VoteToStart
+  - CancelVoteToStart
+  - RPC_RequestCurrentVotesFromMaster
+  - RPC_CancelVoteToStart
+  - RPC_VoteToStart
+  - RPC_SendCurrentVotes
   DisableAutoOpenWizard: 1
   ShowSettings: 1

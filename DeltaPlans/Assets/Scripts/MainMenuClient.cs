@@ -5,11 +5,29 @@ using TMPro;
 
 public class MainMenuClient : MonoBehaviour
 {
-
+    public static MainMenuClient _menuController;
     public GameObject[] _menuPages;
     public TMP_InputField _joinCodeInputField;
     public TMP_InputField _playerCapInputField;
 
+    private void Awake()
+    {
+        #region Singleton Init
+        if (_menuController == null)       //If the singleton has not been initialised
+        {
+            _menuController = this;
+        }
+        else
+        {
+            if (_menuController != this)   //If there is more than one instance and this is not the first (If player returns to main menu)
+            {
+                Destroy(gameObject);        //Destroy this instance
+                return;
+            }
+        }
+        DontDestroyOnLoad(gameObject);
+        #endregion
+    }
 
     public void ChangeMenuPage(int index)
     {
@@ -27,32 +45,21 @@ public class MainMenuClient : MonoBehaviour
         }
     }
 
-    #region RootMenu
-        public void PlayButtonPressed()
-        {
+    public void QuitButtonPressed() //When the player presses quit
+    {
+        #if UNITY_EDITOR == false
+                Application.Quit();                                 //Quit application if running in build
+        #endif
 
-        }
+        #if UNITY_EDITOR == true
+                UnityEditor.EditorApplication.isPlaying = false;    //Exit playmode if running in editor
+        #endif
+    }
 
-        public void OptionsButtonPressed()
-        {
-
-        }
-
-        public void QuitButtonPressed()
-        {
-            #if UNITY_EDITOR == false
-                        Application.Quit();
-            #endif
-
-            #if UNITY_EDITOR == true
-                    UnityEditor.EditorApplication.isPlaying = false;
-            #endif
-        }
-    #endregion
 
     #region MultiplayerMenu
 
-    public void ValidatePlayerCap()
+    public void ValidatePlayerCap() //Clamp the player cap (input field in create game menu) to make sure it is within the allowed range then pass it on to the lobby
     {
         int currentValue = System.Convert.ToInt32(_playerCapInputField.text);
 
