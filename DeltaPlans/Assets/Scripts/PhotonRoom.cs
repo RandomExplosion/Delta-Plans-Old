@@ -17,7 +17,6 @@ public class PhotonRoom : MonoBehaviourPunCallbacks, IInRoomCallbacks
     /// 
     /// </summary>
 
-
     //Room Info
     public static PhotonRoom _currentRoom;  //Singleton
     private PhotonView _pv;                 //Photon View (see photon docs)
@@ -37,6 +36,55 @@ public class PhotonRoom : MonoBehaviourPunCallbacks, IInRoomCallbacks
     private bool _notAloneInGame = false;
     private bool _inTeam = false;
     private float _lastsceneloadtime = 0;
+
+    #region Classes
+
+    [System.Serializable]
+    public class Team
+    {
+        //Array of all Members (Note: index 0 is the team leader)
+        public List<string> _members;
+        public string _teamName;
+
+        public Team(string leader, string teamName)
+        {
+            _members = new List<string>();
+            _members.Add(leader);
+            _teamName = teamName;
+        }
+
+        public bool IsPlayerInTeam(string userId)
+        {
+            foreach (string member in _members)
+            {
+                if (userId == member)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public void ChangeTeamName(string newName)
+        {
+            if (newName != "")
+            {
+                _teamName = newName; 
+            }
+        }
+
+        public void AddPlayerToTeam(string userId)
+        {
+            _members.Add(userId);
+        }
+
+        public void RemovePlayerFromTeam(string userId)
+        {
+            _members.Remove(userId);
+        }
+    } 
+
+    #endregion
 
     // Awake is called before the first frame update and before start
     void Awake()
@@ -203,11 +251,59 @@ public class PhotonRoom : MonoBehaviourPunCallbacks, IInRoomCallbacks
 
     #region Team Organisation RPCS
         
-        [PunRPC]
-        public void RPC_TeamInvite()
-        {
+    [PunRPC]
+    public void RPC_TeamInvite()    //Sent to other players to invite them to your team
+    {
             
+    }
+
+    public void RPC_TeamInviteAccepted(PhotonMessageInfo messageinfo, Player teamHost)   //Sent by the invitee to the masterclient to confirm a team change
+    {
+        //Actual Logic
+
+        //If this is the master client
+        if (PhotonNetwork.IsMasterClient)
+        {
+            List<Team> teams = PhotonNetwork.CurrentRoom.CustomProperties["Teams"] as List<Team>;
+
+            //Remove the acceptee from any team they might be in
+            for (int i = 0; i < teams.Count; i++)
+            {
+                if (teams[i].IsPlayerInTeam(messageinfo.Sender.UserId))
+                {
+                    teams[i].RemovePlayerFromTeam(messageinfo.Sender.UserId);
+                }
+            }
+
+            bool joinExistingTeam = false;
+            int existingteamindex = 0;
+
+            //Check if the leader already has a team
+            for (int i = 0; i < teams.Count; i++)
+            {
+                if (teams[i]._members[0] == teamHost.UserId)
+                {
+                    joinExistingTeam = true;    //We need to add the player to that team
+                    existingteamindex = i;      //Record the index of the team
+                }
+            }
+
+            //If the team leader has a team already
+            if (joinExistingTeam == true)
+            {
+                //Add the team to that
+                teams[existingteamindex]._members.Add(messageinfo.Sender.UserId);
+            }
+            else
+            {
+                //Make a new team
+                teams.Add(new Team(teamHost.UserId, teamHost.NickName));
+                //Add the player to that team
+                teams[teams.Count - 1].AddPlayerToTeam(messageinfo.Sender.UserId);
+            }
+
         }
+    }
 
     #endregion
 
