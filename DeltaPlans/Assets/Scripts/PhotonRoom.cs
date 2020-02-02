@@ -150,7 +150,7 @@ public class PhotonRoom : MonoBehaviourPunCallbacks, IInRoomCallbacks
         }
     }
 
-    #region Team Organisation RPCS
+    #region Game Prep RPCS
 
     [PunRPC]
     private void RPC_ChangeReadyState(bool state, PhotonMessageInfo info)
@@ -174,7 +174,7 @@ public class PhotonRoom : MonoBehaviourPunCallbacks, IInRoomCallbacks
             return;
         }
 
-        if (_playerList.childCount < _photonPlayers.Length)
+        if (_playerList.childCount != _photonPlayers.Length)
         {
             //Delete all the current list entries
             for (int i = 0; i < _playerList.childCount; i++)
@@ -185,7 +185,8 @@ public class PhotonRoom : MonoBehaviourPunCallbacks, IInRoomCallbacks
             //Instantiate new entries
             for (int i = 0; i < _photonPlayers.Length; i++)
             {
-                Instantiate(_playerListEntryPrefab, _playerList);
+                GameObject newentry = Instantiate(_playerListEntryPrefab, _playerList);
+                newentry.transform.GetChild(1).GetChild(1).GetComponent<Button>().onClick.AddListener(delegate { InvitePlayerToTeam(i); });
             }
         }
 
@@ -197,6 +198,16 @@ public class PhotonRoom : MonoBehaviourPunCallbacks, IInRoomCallbacks
             _playerList.GetChild(i).GetChild(0).GetChild(0).GetComponent<TextMeshProUGUI>().SetText(_photonPlayers[i].NickName);
         } 
     }
+
+    #endregion
+
+    #region Team Organisation RPCS
+        
+        [PunRPC]
+        public void RPC_TeamInvite()
+        {
+            
+        }
 
     #endregion
 
@@ -237,13 +248,6 @@ public class PhotonRoom : MonoBehaviourPunCallbacks, IInRoomCallbacks
             }  
         }
     }
-    
-    IEnumerator RefreshPlayerListIn2Secs()
-    {
-        yield return new WaitForSeconds(2);
-        _pv.RPC("UpdatePlayerListGUI", RpcTarget.All, false); 
-        yield return null;
-    }
 
     #region TeamSelectScreen
 
@@ -259,6 +263,11 @@ public class PhotonRoom : MonoBehaviourPunCallbacks, IInRoomCallbacks
         _readyToStartButton.SetActive(true); //Show vote to start button
         _notReadyToStartButton.SetActive(false); //Hide the vote to cancel button
         _pv.RPC("RPC_ChangeReadyState", RpcTarget.MasterClient, false); //Tell the master client that we are not ready to play anymore
+    }
+
+    public void InvitePlayerToTeam(int playerIndex)
+    {
+        _pv.RPC("TeamInvite", _photonPlayers[playerIndex]);
     }
 
     private void UpdateTeamsGUI()
