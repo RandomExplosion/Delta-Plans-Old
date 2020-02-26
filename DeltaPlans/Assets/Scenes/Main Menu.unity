@@ -7270,10 +7270,10 @@ AudioSource:
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
-  m_PlayOnAwake: 1
+  m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
-  Loop: 0
+  Loop: 1
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0
@@ -7368,7 +7368,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   music:
-  - clip: {fileID: 0}
+  - clip: {fileID: 8300000, guid: b5b1986666cf8d84cbeaa41eba5af4df, type: 3}
     ScenesToPlay:
     - Main Menu
     - Game

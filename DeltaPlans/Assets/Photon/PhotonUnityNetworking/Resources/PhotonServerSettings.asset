@@ -43,5 +43,8 @@ MonoBehaviour:
   - RPC_SendCurrentVotes
   - RPC_ChangeReadyState
   - UpdatePlayerListGUI
+  - RPC_TeamInvite
+  - RPC_TeamInviteAccepted
+  - RPC_TeamChange
   DisableAutoOpenWizard: 1
   ShowSettings: 1

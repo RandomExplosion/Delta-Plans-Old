@@ -31,6 +31,8 @@ public class PhotonRoom : MonoBehaviourPunCallbacks, IInRoomCallbacks
     public GameObject _notReadyToStartButton;
     public Transform _playerList;
     public GameObject _playerListEntryPrefab;
+    public int _pendingInviteSource;
+    private bool _teamChanged;              //Marker for team list rebuilding
 
     //Vote to start prerequesites (all must be true for button to enable)
     private bool _notAloneInGame = false;
@@ -142,9 +144,10 @@ public class PhotonRoom : MonoBehaviourPunCallbacks, IInRoomCallbacks
         MainMenuClient._menuController.gameObject.SetActive(false);                                                     //Disable the Main menu because it will not be destroyed when the game loads
         if (PhotonNetwork.IsMasterClient)                                                                               //If this is the host client
         {
-            ExitGames.Client.Photon.Hashtable readyProperties = new ExitGames.Client.Photon.Hashtable { };
-            readyProperties.Add("readyToPlay", false);
-            PhotonNetwork.LocalPlayer.SetCustomProperties(readyProperties);
+            ExitGames.Client.Photon.Hashtable startingProperties = new ExitGames.Client.Photon.Hashtable { };
+            startingProperties.Add("readyToPlay", false);
+            startingProperties.Add("inTeam", false);
+            PhotonNetwork.LocalPlayer.SetCustomProperties(startingProperties);
             SceneManager.LoadScene(MultiplayerSettings._currentSettings._gameScene);                                    //Load the game scene (applies to all other clients as well after they join
         }
         else
@@ -166,9 +169,10 @@ public class PhotonRoom : MonoBehaviourPunCallbacks, IInRoomCallbacks
         if (PhotonNetwork.IsMasterClient)
         {
             //Init Ready Property
-            ExitGames.Client.Photon.Hashtable readyProperties = new ExitGames.Client.Photon.Hashtable { };
-            readyProperties.Add("readyToPlay", false);
-            newPlayer.SetCustomProperties(readyProperties);
+            ExitGames.Client.Photon.Hashtable startingProperties = new ExitGames.Client.Photon.Hashtable { };
+            startingProperties.Add("readyToPlay", false);
+            startingProperties.Add("inTeam", false);
+            newPlayer.SetCustomProperties(startingProperties);
         }
     }
 
@@ -222,8 +226,10 @@ public class PhotonRoom : MonoBehaviourPunCallbacks, IInRoomCallbacks
             return;
         }
 
-        if (_playerList.childCount != _photonPlayers.Length)
+        if (_playerList.childCount != _photonPlayers.Length || _teamChanged == true)
         {
+            _teamChanged = false;   //Reset Team Changed Marker
+
             //Delete all the current list entries
             for (int i = 0; i < _playerList.childCount; i++)
             {
@@ -234,16 +240,26 @@ public class PhotonRoom : MonoBehaviourPunCallbacks, IInRoomCallbacks
             for (int i = 0; i < _photonPlayers.Length; i++)
             {
                 GameObject newentry = Instantiate(_playerListEntryPrefab, _playerList);
-                newentry.transform.GetChild(1).GetChild(1).GetComponent<Button>().onClick.AddListener(delegate { InvitePlayerToTeam(i); });
+                newentry.transform.GetChild(1).GetChild(1).GetComponent<Button>().onClick.AddListener(delegate { InvitePlayerToTeam(i); });   //Set Up Listener for Invite Button
+
+                if (i == PhotonNetwork.LocalPlayer.ActorNumber - 1)
+                {
+                    newentry.transform.GetChild(1).GetChild(1).gameObject.GetComponent<Button>().interactable = false;  //Disable Invite Button
+                }
+                else if ((bool)_photonPlayers[i].CustomProperties["inTeam"] == true)    //If the player is already in a team
+                {
+                    newentry.transform.GetChild(1).GetChild(1).gameObject.SetActive(false);     //Hide Invite Button
+                    newentry.transform.GetChild(1).GetChild(0).gameObject.GetComponent<TextMeshProUGUI>().SetText((string)_photonPlayers[i].CustomProperties["teamName"]);  //Display Team Name in place of Invite Button
+                }
             }
         }
 
         //Update Ready to play Indicators, NickNames and Teams
         for (int i = 0; i < _photonPlayers.Length; i++)
         {
+            _playerList.GetChild(i).GetChild(0).GetChild(0).GetComponent<TextMeshProUGUI>().SetText(_photonPlayers[i].NickName);
             bool readystate = (bool)_photonPlayers[i].CustomProperties["readyToPlay"];
             _playerList.GetChild(i).GetChild(2).GetChild(1).gameObject.SetActive(readystate);      //Appropriately toggle the ready to play indicator for the player
-            _playerList.GetChild(i).GetChild(0).GetChild(0).GetComponent<TextMeshProUGUI>().SetText(_photonPlayers[i].NickName);
         } 
     }
 
@@ -252,14 +268,16 @@ public class PhotonRoom : MonoBehaviourPunCallbacks, IInRoomCallbacks
     #region Team Organisation RPCS
         
     [PunRPC]
-    public void RPC_TeamInvite()    //Sent to other players to invite them to your team
+    public void RPC_TeamInvite(PhotonMessageInfo messageInfo)    //Sent to other players to invite them to your team
     {
-            
+        _pendingInviteSource = messageInfo.Sender.ActorNumber-1;
+        TeamInvitePopup._currentPopup.ShowPopup();
     }
 
-    public void RPC_TeamInviteAccepted(PhotonMessageInfo messageinfo, Player teamHost)   //Sent by the invitee to the masterclient to confirm a team change
+    [PunRPC]
+    public void RPC_TeamInviteAccepted(PhotonMessageInfo messageinfo, string leaderId)   //Sent by the invitee to the masterclient to confirm a team change
     {
-        //Actual Logic
+        _photonPlayers = PhotonNetwork.PlayerList;
 
         //If this is the master client
         if (PhotonNetwork.IsMasterClient)
@@ -281,12 +299,23 @@ public class PhotonRoom : MonoBehaviourPunCallbacks, IInRoomCallbacks
             //Check if the leader already has a team
             for (int i = 0; i < teams.Count; i++)
             {
-                if (teams[i]._members[0] == teamHost.UserId)
+                if (teams[i]._members[0] == leaderId)
                 {
                     joinExistingTeam = true;    //We need to add the player to that team
                     existingteamindex = i;      //Record the index of the team
                 }
             }
+
+            Player teamLeader = null;
+            for (int i = 0; i < _photonPlayers.Length; i++)
+            {
+                if (_photonPlayers[i].UserId == leaderId)
+                {
+                    teamLeader = _photonPlayers[i];
+                    break;
+                }
+            }
+            
 
             //If the team leader has a team already
             if (joinExistingTeam == true)
@@ -297,12 +326,29 @@ public class PhotonRoom : MonoBehaviourPunCallbacks, IInRoomCallbacks
             else
             {
                 //Make a new team
-                teams.Add(new Team(teamHost.UserId, teamHost.NickName));
+                teams.Add(new Team(leaderId, teamLeader.NickName));
                 //Add the player to that team
                 teams[teams.Count - 1].AddPlayerToTeam(messageinfo.Sender.UserId);
             }
 
+            //Serialise the new teams into a hashtable and Update the room properties
+            ExitGames.Client.Photon.Hashtable updatedTeams = new ExitGames.Client.Photon.Hashtable { };
+            updatedTeams.Add("Teams", teams);
+            PhotonNetwork.CurrentRoom.SetCustomProperties(updatedTeams);
+
+            //Mark the player as in a team
+            ExitGames.Client.Photon.Hashtable inTeam = new ExitGames.Client.Photon.Hashtable { };
+            inTeam.Add("inTeam", true);
+            inTeam.Add("teamName", true);
+            messageinfo.Sender.SetCustomProperties(inTeam);
+            _pv.RPC("RPC_TeamChange", RpcTarget.All);
         }
+    }
+
+    [PunRPC]
+    public void RPC_TeamChange()
+    {
+        _teamChanged = true;
     }
 
     #endregion
@@ -363,12 +409,12 @@ public class PhotonRoom : MonoBehaviourPunCallbacks, IInRoomCallbacks
 
     public void InvitePlayerToTeam(int playerIndex)
     {
-        _pv.RPC("TeamInvite", _photonPlayers[playerIndex]);
+        _pv.RPC("RPC_TeamInvite", _photonPlayers[playerIndex]);
     }
 
-    private void UpdateTeamsGUI()
+    public void AcceptPendingInvite()
     {
-        
+        _pv.RPC("RPC_TeamInviteAccepted", RpcTarget.MasterClient, _photonPlayers[_pendingInviteSource].UserId);
     }
 
     private void OnApplicationQuit()
