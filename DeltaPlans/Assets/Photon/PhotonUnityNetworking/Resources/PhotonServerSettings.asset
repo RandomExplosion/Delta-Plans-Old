@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: PhotonServerSettings
   m_EditorClassIdentifier: 
   AppSettings:
-    AppIdRealtime: d7a6d3f6-6981-4348-b9e4-8a1a2499bcaa
+    AppIdRealtime: 
     AppIdChat: 
     AppIdVoice: 
-    AppVersion: 0
+    AppVersion: 
     UseNameServer: 1
-    FixedRegion: au
+    FixedRegion: 
     Server: 
     Port: 0
     Protocol: 0
@@ -34,17 +34,10 @@ MonoBehaviour:
   - DestroySpaceship
   - Fire
   - RespawnSpaceship
-  - OnSceneFinishedLoading
-  - VoteToStart
-  - CancelVoteToStart
-  - RPC_RequestCurrentVotesFromMaster
-  - RPC_CancelVoteToStart
-  - RPC_VoteToStart
-  - RPC_SendCurrentVotes
   - RPC_ChangeReadyState
-  - UpdatePlayerListGUI
+  - RPC_TeamChange
   - RPC_TeamInvite
   - RPC_TeamInviteAccepted
-  - RPC_TeamChange
+  - UpdatePlayerListGUI
   DisableAutoOpenWizard: 1
-  ShowSettings: 1
+  ShowSettings: 0
