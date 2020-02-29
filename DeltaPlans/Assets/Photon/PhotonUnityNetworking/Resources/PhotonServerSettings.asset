@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: PhotonServerSettings
   m_EditorClassIdentifier: 
   AppSettings:
-    AppIdRealtime: 
+    AppIdRealtime: d7a6d3f6-6981-4348-b9e4-8a1a2499bcaa
     AppIdChat: 
     AppIdVoice: 
     AppVersion: 
     UseNameServer: 1
-    FixedRegion: 
+    FixedRegion: au
     Server: 
     Port: 0
     Protocol: 0
@@ -40,4 +40,4 @@ MonoBehaviour:
   - RPC_TeamInviteAccepted
   - UpdatePlayerListGUI
   DisableAutoOpenWizard: 1
-  ShowSettings: 0
+  ShowSettings: 1

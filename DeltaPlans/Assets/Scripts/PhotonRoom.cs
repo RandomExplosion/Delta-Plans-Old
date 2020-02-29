@@ -240,7 +240,7 @@ public class PhotonRoom : MonoBehaviourPunCallbacks, IInRoomCallbacks
             for (int i = 0; i < _photonPlayers.Length; i++)
             {
                 GameObject newentry = Instantiate(_playerListEntryPrefab, _playerList);
-                newentry.transform.GetChild(1).GetChild(1).GetComponent<Button>().onClick.AddListener(delegate { InvitePlayerToTeam(i); });   //Set Up Listener for Invite Button
+                newentry.transform.GetChild(1).GetChild(1).GetComponent<Button>().onClick.AddListener(delegate { InvitePlayerToTeam(i-1); });   //Set Up Listener for Invite Button
 
                 if (i == PhotonNetwork.LocalPlayer.ActorNumber - 1)
                 {
